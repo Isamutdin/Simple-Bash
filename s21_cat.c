@@ -1,37 +1,27 @@
-#include <stdio.h>
-#include <getopt.h>
-#include <ctype.h>
-
-typedef struct {
-	int n;
-	int b;
-	int s;
-	int e;
-	int t;
-	int v;
-	int E;
-	int T;
-} StructFlags;
-
-void flag_n_b(char ch, StructFlags *struct_flags, int *count, char *previous);
-void flag_e(char ch, StructFlags *struct_flags, char *previous);
-void flag_s(char ch, char *previous_flag_s, int *count_flag_s);
-void flag_t(char ch);
-void print_char(char ch, StructFlags *structflags);
+#include "s21_cat.h"
 
 int main(int argc, char **argv) {
 	StructFlags struct_flags = {0}; 
 	char flags_array[12] = "EenbsvtT";
-	FILE *file;
-
-struct option long_options[] = {{"number_nonblank", no_argument, NULL, 'b'},
-                                       {"number", no_argument, NULL, 'n'},
-                                       {"squeeze-blank", no_argument, NULL, 's'},
-                                       {0, 0, 0, 0}};
+	FILE *file = NULL;
+	int quantity_files = 0;
 
 	for(int i = 1; i < argc; i++) { 
-		if(*argv[i] != '-')
+		if(*argv[i] != '-') {
 			file = fopen(argv[i], "r");
+			quantity_files = 1;
+		}
+	}
+
+	if(argc - optind == 0) {
+		fprintf(stderr, "Введите параметры!\n", file);
+		return -1;
+	} else if(quantity_files == 0) {
+		fprintf(stderr, "Введите файл!\n", file);
+		return -1;
+	} else if(file == NULL) {
+		fprintf(stderr, "Такого файла не существует!\n", file);
+		return -1;
 	}
 
 	int index_getopt = 0;
@@ -80,21 +70,21 @@ struct option long_options[] = {{"number_nonblank", no_argument, NULL, 'b'},
 			if(struct_flags.s == 1) 
 				flag_s(ch, &previous_flag_s, &count_flag_s);		
 			if(count_flag_s < 2) {
-				if(struct_flags.n == 1)
-					flag_n_b(ch, &struct_flags, &count, &previous);
-				if(struct_flags.b == 1)
+				if(struct_flags.n == 1 || struct_flags.b == 1)
 					flag_n_b(ch, &struct_flags, &count, &previous);
 				if(struct_flags.e == 1 || struct_flags.E)
 					flag_e(ch, &struct_flags, &previous);
 				if(struct_flags.t == 1 && ch == '\t' || struct_flags.T == 1 && ch == '\t') {
 					flag_t(ch);
 					ch = fgetc(file);
+					continue;
 				}
 			print_char(ch, &struct_flags);
 			}
 				
 			ch = fgetc(file);
 		}
+	fclose(file);
 	return 0;
 }
 
@@ -135,7 +125,6 @@ void flag_t(char ch) {
 	fputc('I', stdout);
 }
 
- 
 void print_char(char ch, StructFlags *struct_flags) {
 	if(struct_flags->e || struct_flags->t || struct_flags->v) {
 		if(ch != '\t' && ch != '\n' && iscntrl(ch)) {
@@ -149,5 +138,3 @@ void print_char(char ch, StructFlags *struct_flags) {
 	} else
 		fputc(ch, stdout);
 }
-
-		
